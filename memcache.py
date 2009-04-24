@@ -53,7 +53,7 @@ except ImportError:
     import pickle
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__   = "1.2"
+__version__   = "1.2_tummy2"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -127,8 +127,9 @@ class Client:
             s.send_cmd('stats')
             serverData = {}
             data.append(( name, serverData ))
+            readline = s.readline
             while 1:
-                line = s.readline()
+                line = readline()
                 if not line or line.strip() == 'END': break
                 stats = line.split(' ', 2)
                 serverData[stats[1]] = stats[2]
@@ -502,23 +503,18 @@ class _Host:
         self.socket.sendall(cmd + "\r\n")
 
     def readline(self):
-        newlines = 0
-        buf = ''
-        while newlines < 2:
-            char = self.socket.recv(1) # XXX does this buffer or is this slow?
-            if len(char) == 0:
-                # connection closed.
-                print "MemCache: Connection closed while reading from %s.  Marking dead." % self
-                self.mark_dead
-                return buf
-            if char == '\r' and newlines == 0:
-                newlines = 1
-            elif char == '\n' and newlines == 1: 
-                newlines = 2
-            else:
-                newlines = 0
-                buf = buf + char
-        return buf
+        buffers = ''
+        recv = self.socket.recv
+        while 1:
+            data = recv(1)
+            if not data:
+                self.mark_dead('Connection closed while reading from %s'
+                        % repr(self))
+                break
+            if data == '\n' and buffers and buffers[-1] == '\r':
+                return(buffers[:-1])
+            buffers = buffers + data
+        return(buffers)
 
     def expect(self, text):
         line = self.readline()
@@ -528,8 +524,9 @@ class _Host:
     
     def recv(self, rlen):
         buf = ''
+        recv = self.socket.recv
         while len(buf) < rlen:
-            buf = buf + self.socket.recv(rlen - len(buf))
+            buf = buf + recv(rlen - len(buf))
         return buf
 
     def __str__(self):

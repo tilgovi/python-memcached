@@ -1,3 +1,9 @@
+Mon, 13 Dec 2004 02:35:17 -0700  Sean Reifschneider  <jafo@tummy.com>
+
+   * Simplifying the readline() function and speeding it up ~25%.
+   * Fixing a bug in readline() if the server drops, mark_dead() was not
+      being properly called.
+
 Sun, 12 Dec 2004 18:56:33 -0700  Sean Reifschneider  <jafo@tummy.com>
 
    * Adding "stats()" and "flush_all()" methods.
