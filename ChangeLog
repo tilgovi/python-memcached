@@ -1,3 +1,11 @@
+Tue, 05 Sep 2006 14:06:50 -0600  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.33
+
+   * Including patch from Yoshinori K. Okuji to read in larger chunks for
+   readline() calls.  This should dramatically improve performance under
+   some circumstances.
+
 Sun, 03 Sep 2006 14:02:03 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Version 1.32
