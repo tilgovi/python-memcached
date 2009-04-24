@@ -70,7 +70,7 @@ from binascii import crc32   # zlib version is not cross-platform
 serverHashFunction = crc32
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.39"
+__version__ = "1.40"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -131,13 +131,21 @@ class Client(local):
         pass
 
     def __init__(self, servers, debug=0, pickleProtocol=0,
-            pickler=pickle.Pickler, unpickler=pickle.Unpickler):
+                 pickler=pickle.Pickler, unpickler=pickle.Unpickler,
+                 pload=None, pid=None):
         """
         Create a new Client object with the given list of servers.
 
         @param servers: C{servers} is passed to L{set_servers}.
         @param debug: whether to display error messages when a server can't be
         contacted.
+        @param pickleProtocol: number to mandate protocol used by (c)Pickle.
+        @param pickler: optional override of default Pickler to allow subclassing.
+        @param unpickler: optional override of default Unpickler to allow subclassing.
+        @param pload: optional persistent_load function to call on pickle loading.
+        Useful for cPickle since subclassing isn't allowed.
+        @param pid: optional persistent_id function to call on pickle storing.
+        Useful for cPickle since subclassing isn't allowed.
         """
         local.__init__(self)
         self.set_servers(servers)
@@ -148,7 +156,9 @@ class Client(local):
         self.pickleProtocol = pickleProtocol
         self.pickler = pickler
         self.unpickler = unpickler
-
+        self.persistent_load = pload
+        self.persistent_id = pid
+        
     def set_servers(self, servers):
         """
         Set the pool of servers used by this client.
@@ -401,11 +411,12 @@ class Client(local):
     def set(self, key, val, time=0, min_compress_len=0):
         '''Unconditionally sets a key to a given value in the memcache.
 
-        The C{key} can optionally be an tuple, with the first element being the
-        hash value, if you want to avoid making this module calculate a hash value.
-        You may prefer, for example, to keep all of a given user's objects on the
-        same memcache server, so you could use the user's unique id as the hash
-        value.
+        The C{key} can optionally be an tuple, with the first element
+        being the server hash value and the second being the key.
+        If you want to avoid making this module calculate a hash value.
+        You may prefer, for example, to keep all of a given user's objects
+        on the same memcache server, so you could use the user's unique
+        id as the hash value.
 
         @return: Nonzero on success.
         @rtype: int
@@ -562,10 +573,11 @@ class Client(local):
         else:
             flags |= Client._FLAG_PICKLE
             file = StringIO()
-            pickler = self.pickler(file, self.pickleProtocol)
+            pickler = self.pickler(file, protocol=self.pickleProtocol)
+            if self.persistent_id:
+                pickler.persistent_id = self.persistent_id
             pickler.dump(val)
             val = file.getvalue()
-
         #  silently do not store if value length exceeds maximum
         if len(val) >= SERVER_MAX_VALUE_LENGTH: return(0)
 
@@ -731,6 +743,8 @@ class Client(local):
             try:
                 file = StringIO(buf)
                 unpickler = self.unpickler(file)
+                if self.persistent_load:
+                    unpickler.persistent_load = self.persistent_load
                 val = unpickler.load()
             except Exception, e:
                 self.debuglog('Pickle error: %s\n' % e)
@@ -859,6 +873,7 @@ def check_key(key, key_extra_len=0):
         Contains control characters  (Raises MemcachedKeyCharacterError).
         Is not a string (Raises MemcachedStringEncodingError)
     """
+    if type(key) == types.TupleType: key = key[1]
     if not isinstance(key, str):
         raise Client.MemcachedStringEncodingError, ("Keys must be str()'s, not"
                 "unicode.  Convert your unicode strings using "
@@ -869,7 +884,7 @@ def check_key(key, key_extra_len=0):
              raise Client.MemcachedKeyLengthError, ("Key length is > %s"
                      % SERVER_MAX_KEY_LENGTH)
         for char in key:
-          if ord(char) < 33:
+          if ord(char) < 33 or ord(char) == 127:
             raise Client.MemcachedKeyCharacterError, "Control characters not allowed"
 
 def _doctest():

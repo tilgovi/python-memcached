@@ -1,3 +1,18 @@
+Tue, 18 Sep 2007 20:52:09 -0600  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.40
+
+   * Updated setup.py file that uses distutils provided by Kai Lautaportti.
+
+   * Prevent keys from containing ASCII character 127 as well, patch provided
+     by Philip Neustrom.
+
+   * Added ability to overload the persistent_load/id, patch provided by
+     Steve Schwarz.
+
+   * Fixed ability to pass (server_hash,key) in place of key in Client.set()
+     Reported by Alexander Klyuev.
+
 Tue, 14 Aug 2007 14:43:27 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Version 1.39
