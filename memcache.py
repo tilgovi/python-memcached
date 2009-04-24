@@ -398,8 +398,10 @@ class Client:
                 line = server.readline()
                 while line and line != 'END':
                     rkey, flags, rlen = self._expectvalue(server, line)
-                    val = self._recv_value(server, flags, rlen)
-                    retvals[rkey] = val
+                    #  Bo Yang reports that this can sometimes be None
+                    if rkey is not None:
+                        val = self._recv_value(server, flags, rlen)
+                        retvals[rkey] = val
                     line = server.readline()
             except (_Error, socket.error), msg:
                 server.mark_dead(msg)

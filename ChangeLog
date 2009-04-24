@@ -1,3 +1,7 @@
+Thu, 7 Apr 2005 14:45:44 -0700  Sean Reifschneider  <jafo@tummy.com>
+
+   * Incorporating some fixes to get_multi() from Bo Yang
+
 Mon, 13 Dec 2004 02:35:17 -0700  Sean Reifschneider  <jafo@tummy.com>
 
    * Simplifying the readline() function and speeding it up ~25%.
