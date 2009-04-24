@@ -72,7 +72,7 @@ from binascii import crc32   # zlib version is not cross-platform
 serverHashFunction = crc32
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.43"
+__version__ = "1.44"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -129,6 +129,10 @@ class Client(local):
         pass
     class MemcachedKeyCharacterError(MemcachedKeyError):
         pass
+    class MemcachedKeyNoneError(MemcachedKeyError):
+        pass
+    class MemcachedKeyTypeError(MemcachedKeyError):
+        pass
     class MemcachedStringEncodingError(Exception):
         pass
 
@@ -160,7 +164,15 @@ class Client(local):
         self.unpickler = unpickler
         self.persistent_load = pload
         self.persistent_id = pid
-        
+
+        #  figure out the pickler style
+        file = StringIO()
+        try:
+            pickler = self.pickler(file, protocol = self.pickleProtocol)
+            self.picklerIsKeyword = True
+        except TypeError:
+            self.picklerIsKeyword = False
+
     def set_servers(self, servers):
         """
         Set the pool of servers used by this client.
@@ -185,7 +197,10 @@ class Client(local):
         data = []
         for s in self.servers:
             if not s.connect(): continue
-            name = '%s:%s (%s)' % ( s.ip, s.port, s.weight )
+            if s.family == socket.AF_INET:
+                name = '%s:%s (%s)' % ( s.ip, s.port, s.weight )
+            else:
+                name = 'unix:%s (%s)' % ( s.address, s.weight )
             s.send_cmd('stats')
             serverData = {}
             data.append(( name, serverData ))
@@ -197,6 +212,30 @@ class Client(local):
                 serverData[stats[1]] = stats[2]
 
         return(data)
+
+    def get_slabs(self):
+        data = []
+        for s in self.servers:
+            if not s.connect(): continue
+            if s.family == socket.AF_INET:
+                name = '%s:%s (%s)' % ( s.ip, s.port, s.weight )
+            else:
+                name = 'unix:%s (%s)' % ( s.address, s.weight )
+            serverData = {}
+            data.append(( name, serverData ))
+            s.send_cmd('stats items')
+            readline = s.readline
+            while 1:
+                line = readline()
+                if not line or line.strip() == 'END': break
+                item = line.split(' ', 2)
+                #0 = STAT, 1 = ITEM, 2 = Value
+                slab = item[1].split(':', 2)
+                #0 = items, 1 = Slab #, 2 = Name
+                if not serverData.has_key(slab[1]):
+                    serverData[slab[1]] = {}
+                serverData[slab[1]][slab[2]] = item[2]
+        return data
 
     def flush_all(self):
         'Expire all data currently in the memcache servers.'
@@ -220,7 +259,7 @@ class Client(local):
         Reset every host in the pool to an "alive" state.
         """
         for s in self.servers:
-            s.dead_until = 0
+            s.deaduntil = 0
 
     def _init_buckets(self):
         self.buckets = []
@@ -606,22 +645,28 @@ class Client(local):
         else:
             flags |= Client._FLAG_PICKLE
             file = StringIO()
-            pickler = self.pickler(file, protocol=self.pickleProtocol)
+            if self.picklerIsKeyword:
+                pickler = self.pickler(file, protocol = self.pickleProtocol)
+            else:
+                pickler = self.pickler(file, self.pickleProtocol)
             if self.persistent_id:
                 pickler.persistent_id = self.persistent_id
             pickler.dump(val)
             val = file.getvalue()
-        #  silently do not store if value length exceeds maximum
-        if len(val) >= SERVER_MAX_VALUE_LENGTH: return(0)
 
         lv = len(val)
-        # We should try to compress if min_compress_len > 0 and we could import zlib and this string is longer than our min threshold.
+        # We should try to compress if min_compress_len > 0 and we could
+        # import zlib and this string is longer than our min threshold.
         if min_compress_len and _supports_compress and lv > min_compress_len:
             comp_val = compress(val)
-            #Only retain the result if the compression result is smaller than the original.
+            # Only retain the result if the compression result is smaller
+            # than the original.
             if len(comp_val) < lv:
                 flags |= Client._FLAG_COMPRESSED
                 val = comp_val
+
+        #  silently do not store if value length exceeds maximum
+        if len(val) >= SERVER_MAX_VALUE_LENGTH: return(0)
 
         return (flags, len(val), val)
 
@@ -910,7 +955,7 @@ class _Host:
             buf += foo
             if len(foo) == 0:
                 raise _Error, ( 'Read %d bytes, expecting %d, '
-                        'read returned 0 length bytes' % ( len(buf), foo ))
+                        'read returned 0 length bytes' % ( len(buf), rlen ))
         self.buffer = buf[rlen:]
         return buf[:rlen]
 
@@ -929,20 +974,27 @@ def check_key(key, key_extra_len=0):
         Key length is > SERVER_MAX_KEY_LENGTH (Raises MemcachedKeyLength).
         Contains control characters  (Raises MemcachedKeyCharacterError).
         Is not a string (Raises MemcachedStringEncodingError)
+        Is an unicode string (Raises MemcachedStringEncodingError)
+        Is not a string (Raises MemcachedKeyError)
+        Is None (Raises MemcachedKeyError)
     """
     if type(key) == types.TupleType: key = key[1]
-    if not isinstance(key, str):
-        raise Client.MemcachedStringEncodingError, ("Keys must be str()'s, not"
+    if not key:
+        raise Client.MemcachedKeyNoneError, ("Key is None")
+    if isinstance(key, unicode):
+        raise Client.MemcachedStringEncodingError, ("Keys must be str()'s, not "
                 "unicode.  Convert your unicode strings using "
                 "mystring.encode(charset)!")
+    if not isinstance(key, str):
+        raise Client.MemcachedKeyTypeError, ("Key must be str()'s")
 
     if isinstance(key, basestring):
         if len(key) + key_extra_len > SERVER_MAX_KEY_LENGTH:
              raise Client.MemcachedKeyLengthError, ("Key length is > %s"
                      % SERVER_MAX_KEY_LENGTH)
         for char in key:
-          if ord(char) < 33 or ord(char) == 127:
-            raise Client.MemcachedKeyCharacterError, "Control characters not allowed"
+            if ord(char) < 32 or ord(char) == 127:
+                raise Client.MemcachedKeyCharacterError, "Control characters not allowed"
 
 def _doctest():
     import doctest, memcache
