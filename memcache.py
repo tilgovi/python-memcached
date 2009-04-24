@@ -53,7 +53,7 @@ except ImportError:
     import pickle
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.33"
+__version__ = "1.34"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -551,10 +551,14 @@ class _Host:
         return line
     
     def recv(self, rlen):
-        recv = self.socket.recv
+        self_socket_recv = self.socket.recv
         buf = self.buffer
         while len(buf) < rlen:
-            buf += recv(4096)
+            foo = self_socket_recv(4096)
+            buf += foo
+            if len(foo) == 0:
+                raise _Error, ( 'Read %d bytes, expecting %d, '
+                        'read returned 0 length bytes' % ( len(buf), foo ))
         self.buffer = buf[rlen:]
         return buf[:rlen]
 
