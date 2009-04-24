@@ -1,3 +1,55 @@
+Thu, 07 Jun 2007 04:10:31 -0600  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.36
+
+   * Patch by Dave St.Germain to make the Client() class sub-class
+     threadlocal to help with multi-threading issues.  Only available in
+     Python 2.4 and above.
+
+   * Patch by James Robinson with:
+      1) new set_multi method.
+      2) factored out determining the flags, length, and value to store
+         from set() into method _val_to_store_info() for use by both set()
+         and set_multi().
+      3) send_cmds() method on host which doesn't apply the trailing '\r\n'
+         for use by set_multi.
+      4) check_key() extended a bit to allow for testing the prefix passed
+         to set_multi just once, not once per each key.
+      5) Patch also enables support for auto compression in set, set_multi,
+         and replace.
+
+   * Suggestion by Helge Tesdal, fixes in check_key for non-string keys.
+
+   * NOTE: On a farm of clients with multiple servers, all clients will
+     need to be upgraded to this version.  The next patch changes the
+     server hash.
+
+   * Philip Neustrom supplied a patch to change the server hash function to
+     binascii.crc32.  The original "hash()" call is not cross-platform, so
+     big and little endian systems accessing the same memcache may end up
+     hitting different servers.  Restore the old functionality by calling:
+     "memcached.serverHashFunction = hash" after importing memcache.
+
+   * Philip Neustrom points out that passing Unicode keys or values causes
+     problems because len(key) or len(value) is not equal to the number of
+     bytes that are required to store the key/value.  Philip provides a
+     patch which raises an exception in this case.  Raises
+     memcache.Client.MemcachedStringEncodingError exception in this case.
+
+   * NOTE: If you recompiled memcached to increase the default 1MB max
+     value size, you will need to call "memcached.MAX_SERVER_VALUE_LENGTH = N"
+     or memcached will not store values larger than the default 1MB.
+
+   * Philip Neustrom includes another patch which checks that the key
+     doesn't exceed the memcache server's max size.  If it does, the item
+     is silently not stored.
+
+   * Philip Neustrom added a bunch of sanity checks.
+
+   * Jehiah Czebotar provided a patch to make the add() and replace()
+     functions return 0 when the add or replace fails, similar to how set()
+     works.
+
 Sat, 16 Sep 2006 18:31:46 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Version 1.34
