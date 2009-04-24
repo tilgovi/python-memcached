@@ -1,3 +1,12 @@
+Tue, 14 Aug 2007 14:43:27 -0600  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.39
+
+   * Michael Krause reports the previous version doesn't work for
+     _val_to_store_info() calls because it's defined as a staticmethod.
+     Removing staticmethod decorator.  Also confirmed by Kai Lautaportti,
+     with suggested fix of removing staticmethod.
+
 Fri, 10 Aug 2007 17:50:13 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Version 1.38

@@ -70,7 +70,7 @@ from binascii import crc32   # zlib version is not cross-platform
 serverHashFunction = crc32
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.38"
+__version__ = "1.39"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -542,7 +542,6 @@ class Client(local):
                 server.mark_dead(msg)
         return notstored
 
-    @staticmethod
     def _val_to_store_info(self, val, min_compress_len):
         """
            Transform val to a storable representation, returning a tuple of the flags, the length of the new value, and the new value itself.
