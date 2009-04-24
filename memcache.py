@@ -53,7 +53,7 @@ except ImportError:
     import pickle
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__   = "1.2_tummy6"
+__version__ = "1.31"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -168,8 +168,7 @@ class Client:
 
     def _get_server(self, key):
         if type(key) == types.TupleType:
-            serverhash = key[0]
-            key = key[1]
+            serverhash, key = key
         else:
             serverhash = hash(key)
 
@@ -445,14 +444,13 @@ class Client:
 
         return val
 
-    
+
 class _Host:
     _DEAD_RETRY = 30  # number of seconds before retrying a dead server.
 
     def __init__(self, host, debugfunc=None):
         if isinstance(host, types.TupleType):
-            host = host[0]
-            self.weight = host[1]
+            host, self.weight = host
         else:
             self.weight = 1
 
@@ -468,7 +466,7 @@ class _Host:
 
         self.deaduntil = 0
         self.socket = None
-    
+
     def _check_dead(self):
         if self.deaduntil and self.deaduntil > time.time():
             return 1

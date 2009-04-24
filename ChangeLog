@@ -1,3 +1,15 @@
+Sat, 20 May 2006 14:51:28 -0600  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.31
+
+   *  Rolled version 1.30 since the Danga folks are now listing this
+   version as the official version.  Removing the "tummy" from the version
+   number, and incrementing so that it's clear it's more recent than "1.2".
+
+   * Patch applied from Simon Forman for handling of weighted hosts.
+
+   * Added a little more meat to the README.
+
 Sat, 28 Jan 2006 15:59:50 -0700  Sean Reifschneider  <jafo@tummy.com>
 
    * cludwin at socallocal suggested that the write-combining with
