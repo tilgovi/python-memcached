@@ -72,7 +72,7 @@ from binascii import crc32   # zlib version is not cross-platform
 serverHashFunction = crc32
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.42"
+__version__ = "1.43"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -792,6 +792,7 @@ class Client(local):
 
 class _Host:
     _DEAD_RETRY = 30  # number of seconds before retrying a dead server.
+    _SOCKET_TIMEOUT = 3  #  number of seconds before sockets timeout.
 
     def __init__(self, host, debugfunc=None):
         if isinstance(host, types.TupleType):
