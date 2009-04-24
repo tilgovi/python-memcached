@@ -112,6 +112,36 @@ class Client:
         self.servers = [_Host(s, self.debuglog) for s in servers]
         self._init_buckets()
 
+    def get_stats(self):
+        '''Get statistics from each of the servers.  
+
+        @return: A list of tuples ( server_identifier, stats_dictionary ).
+            The dictionary contains a number of name/value pairs specifying
+            the name of the status field and the string value associated with
+            it.  The values are not converted from strings.
+        '''
+        data = []
+        for s in self.servers:
+            if not s.connect(): continue
+            name = '%s:%s (%s)' % ( s.ip, s.port, s.weight )
+            s.send_cmd('stats')
+            serverData = {}
+            data.append(( name, serverData ))
+            while 1:
+                line = s.readline()
+                if not line or line.strip() == 'END': break
+                stats = line.split(' ', 2)
+                serverData[stats[1]] = stats[2]
+
+        return(data)
+
+    def flush_all(self):
+        'Expire all data currently in the memcache servers.'
+        for s in self.servers:
+            if not s.connect(): continue
+            s.send_cmd('flush_all')
+            s.expect("OK")
+
     def debuglog(self, str):
         if self.debug:
             sys.stderr.write("MemCached: %s\n" % str)
