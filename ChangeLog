@@ -1,3 +1,36 @@
+Sat, 31 May 2008 02:09:17 -0600  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.42
+
+   *  Paul Hummer set up a Launchpad project which I'm going to start using
+      to track patches and allow users to set up their own bzr branches and
+      manage marging in the upstream patches with their own.
+
+         https://launchpad.net/python-memcached
+
+   *  Patch from Jehiah Czebotar which does: Changing the calls to
+      mark_dead() to make them dereference tuples, reducing timeout on
+      sockets to 3 seconds, settable via setting Host._SOCKET_TIMEOUT.
+
+   *  Patches from Steve Schwarz for set_multi() to return the full set of
+      keys if all servers are down.  Previously would not report any keys.
+
+   *  Fix from Steve Schwarz delete_multi() argument "seconds" not being
+      correctly handled.  Changed it to "time" to match all other calls.
+
+   *  Patch from Peter Wilkinson to support using unix domain sockets.
+      He reports that tests succeed with with memcached daemons running,
+      the normal and a domain socket started via
+      "memcached -s memcached.socket".  I massaged it quite a bit.
+
+      To use domain sockets, use a connect string of "unix:/path/to/socket"
+      Note however that if you are using a host name of "unix", it will now
+      detect "unix:11211" as being a domain socket with the name "11211".
+      In this case, please use "inet:unix:11211".
+
+      Because of this, it is now preferred to use a connect string prefix
+      of "inet:" or "unix:".
+
 Tue, 29 Apr 2008 21:03:53 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Version 1.41
