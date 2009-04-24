@@ -70,7 +70,7 @@ from binascii import crc32   # zlib version is not cross-platform
 serverHashFunction = crc32
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.40"
+__version__ = "1.41"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -397,6 +397,27 @@ class Client(local):
         '''
         return self._set("add", key, val, time, min_compress_len)
 
+    def append(self, key, val, time=0, min_compress_len=0):
+        '''Append the value to the end of the existing key's value.
+
+        Only stores in memcache if key already exists.
+        Also see L{prepend}.
+
+        @return: Nonzero on success.
+        @rtype: int
+        '''
+        return self._set("append", key, val, time, min_compress_len)
+
+    def prepend(self, key, val, time=0, min_compress_len=0):
+        '''Prepend the value to the beginning of the existing key's value.
+
+        Only stores in memcache if key already exists.
+        Also see L{append}.
+
+        @return: Nonzero on success.
+        @rtype: int
+        '''
+        return self._set("prepend", key, val, time, min_compress_len)
 
     def replace(self, key, val, time=0, min_compress_len=0):
         '''Replace existing key with value.
@@ -408,6 +429,7 @@ class Client(local):
         @rtype: int
         '''
         return self._set("replace", key, val, time, min_compress_len)
+
     def set(self, key, val, time=0, min_compress_len=0):
         '''Unconditionally sets a key to a given value in the memcache.
 
@@ -804,6 +826,9 @@ class _Host:
         # Python 2.3-ism:  s.settimeout(1)
         try:
             s.connect((self.ip, self.port))
+        except socket.timeout, msg:
+            self.mark_dead("connect: %s" % msg)
+            return None
         except socket.error, msg:
             self.mark_dead("connect: %s" % msg[1])
             return None
