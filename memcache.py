@@ -53,7 +53,7 @@ except ImportError:
     import pickle
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__   = "1.2_tummy4"
+__version__   = "1.2_tummy5"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -435,7 +435,11 @@ class Client:
         elif flags & Client._FLAG_LONG:
             val = long(buf)
         elif flags & Client._FLAG_PICKLE:
-            val = pickle.loads(buf)
+            try:
+                val = pickle.loads(buf)
+            except:
+                self.debuglog('Pickle error...\n')
+                val = None
         else:
             self.debuglog("unknown flags on get: %x\n" % flags)
 
@@ -477,7 +481,7 @@ class _Host:
         return 0
 
     def mark_dead(self, reason):
-        print "MemCache: %s: %s.  Marking dead." % (self, reason)
+        self.debuglog("MemCache: %s: %s.  Marking dead." % (self, reason))
         self.deaduntil = time.time() + _Host._DEAD_RETRY
         self.close_socket()
         
