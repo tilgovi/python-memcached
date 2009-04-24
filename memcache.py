@@ -53,7 +53,7 @@ except ImportError:
     import pickle
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__   = "1.2_tummy5"
+__version__   = "1.2_tummy6"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -506,11 +506,7 @@ class _Host:
             self.socket = None
 
     def send_cmd(self, cmd):
-        if len(cmd) > 100:
-            self.socket.sendall(cmd)
-            self.socket.sendall('\r\n')
-        else:
-            self.socket.sendall(cmd + '\r\n')
+        self.socket.sendall(cmd + '\r\n')
 
     def readline(self):
         buffers = ''

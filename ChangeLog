@@ -1,3 +1,13 @@
+Sat, 28 Jan 2006 15:59:50 -0700  Sean Reifschneider  <jafo@tummy.com>
+
+   * cludwin at socallocal suggested that the write-combining with
+   sendall() may not be beneficial.  After testing on both SMP and non-SMP
+   machines, I can't see a significant benefit to not doing the
+   write-combining, even on large strings.  The benefits of write-combining
+   on smaller strings seems to be significant on UP machines in tight loops.
+   Even on strings that are larger than 2MB, there seems to be no benefit to
+   splitting out the writes.
+
 Sun, 18 Sep 2005 18:56:31 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Changing a printf to debuglog and catching a pickle exception, patch
