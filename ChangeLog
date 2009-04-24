@@ -1,3 +1,11 @@
+Thu, 14 Jul 2005 11:17:30 -0700  Sean Reifschneider  <jafo@tummy.com>
+
+   * Alex Stapleton found that the sendall call was slow for writing data
+   larger than several kilobytes.  I had him test a change to his patch,
+   which worked as well, but was simpler.  The code now does two sendall
+   calls, one for the data and one for the line termination, if the data is
+   larger than 100 bytes.
+
 Thu, 7 Apr 2005 14:45:44 -0700  Sean Reifschneider  <jafo@tummy.com>
 
    * Incorporating some fixes to get_multi() from Bo Yang
