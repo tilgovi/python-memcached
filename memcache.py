@@ -65,7 +65,7 @@ from binascii import crc32   # zlib version is not cross-platform
 serverHashFunction = crc32
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.36"
+__version__ = "1.37"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -565,7 +565,7 @@ class Client(local):
 
         return (flags, len(val), val)
 
-    def _set(self, cmd, key, val, time, min_compress_len):
+    def _set(self, cmd, key, val, time, min_compress_len = 0):
         check_key(key)
         server, key = self._get_server(key)
         if not server:

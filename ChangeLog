@@ -1,3 +1,10 @@
+Fri, 27 Jul 2007 01:55:48 -0600  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.37
+
+   * Fixing call from add() to _set() with parameter for min_compress_len.
+     Reported by Jeff Fisher.
+
 Thu, 07 Jun 2007 04:10:31 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Version 1.36

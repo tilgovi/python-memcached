@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: python-memcached
-Version: 1.36
+Version: 1.37
 Summary: A Python memcached client library.
 Home-page: http://www.danga.com/memcached/
 Author: Evan Martin
