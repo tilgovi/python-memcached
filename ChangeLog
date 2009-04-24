@@ -1,3 +1,16 @@
+Fri, 10 Aug 2007 17:50:13 -0600  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.38
+
+   * Matt McClanahan submitted a patch that allow add() to have a
+     min_compress_len argument.
+
+   * Steve Schwarz submitted a patch allowing user-defined picklers.
+
+   * Michael Krause suggested checking the return value to prevent an
+     exception from being raised in _set() when a value is too large to be
+     stored.
+
 Fri, 27 Jul 2007 01:55:48 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Version 1.37

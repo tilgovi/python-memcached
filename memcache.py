@@ -61,11 +61,16 @@ except ImportError:
     def decompress(val):
         raise _Error("received compressed data but I don't support compession (import error)")
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 from binascii import crc32   # zlib version is not cross-platform
 serverHashFunction = crc32
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.37"
+__version__ = "1.38"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
 
@@ -125,7 +130,8 @@ class Client(local):
     class MemcachedStringEncodingError(Exception):
         pass
 
-    def __init__(self, servers, debug=0):
+    def __init__(self, servers, debug=0, pickleProtocol=0,
+            pickler=pickle.Pickler, unpickler=pickle.Unpickler):
         """
         Create a new Client object with the given list of servers.
 
@@ -137,6 +143,11 @@ class Client(local):
         self.set_servers(servers)
         self.debug = debug
         self.stats = {}
+
+        # Allow users to modify pickling/unpickling behavior
+        self.pickleProtocol = pickleProtocol
+        self.pickler = pickler
+        self.unpickler = unpickler
 
     def set_servers(self, servers):
         """
@@ -365,7 +376,7 @@ class Client(local):
             server.mark_dead(msg[1])
             return None
 
-    def add(self, key, val, time=0):
+    def add(self, key, val, time = 0, min_compress_len = 0):
         '''
         Add new key with value.
 
@@ -374,7 +385,9 @@ class Client(local):
         @return: Nonzero on success.
         @rtype: int
         '''
-        return self._set("add", key, val, time)
+        return self._set("add", key, val, time, min_compress_len)
+
+
     def replace(self, key, val, time=0, min_compress_len=0):
         '''Replace existing key with value.
 
@@ -530,7 +543,7 @@ class Client(local):
         return notstored
 
     @staticmethod
-    def _val_to_store_info(val, min_compress_len):
+    def _val_to_store_info(self, val, min_compress_len):
         """
            Transform val to a storable representation, returning a tuple of the flags, the length of the new value, and the new value itself.
         """
@@ -549,7 +562,10 @@ class Client(local):
             min_compress_len = 0
         else:
             flags |= Client._FLAG_PICKLE
-            val = pickle.dumps(val, 0)  # Ack! JLR hacks it so that LinkedDict unpicling works w/o figuring out __reduce__.
+            file = StringIO()
+            pickler = self.pickler(file, self.pickleProtocol)
+            pickler.dump(val)
+            val = file.getvalue()
 
         #  silently do not store if value length exceeds maximum
         if len(val) >= SERVER_MAX_VALUE_LENGTH: return(0)
@@ -574,6 +590,7 @@ class Client(local):
         self._statlog(cmd)
 
         store_info = self._val_to_store_info(val, min_compress_len)
+        if not store_info: return(0)
 
         fullcmd = "%s %s %d %d %d\r\n%s" % (cmd, key, store_info[0], time, store_info[1], store_info[2])
         try:
@@ -713,9 +730,11 @@ class Client(local):
             val = long(buf)
         elif flags & Client._FLAG_PICKLE:
             try:
-                val = pickle.loads(buf)
-            except:
-                self.debuglog('Pickle error...\n')
+                file = StringIO(buf)
+                unpickler = self.unpickler(file)
+                val = unpickler.load()
+            except Exception, e:
+                self.debuglog('Pickle error: %s\n' % e)
                 val = None
         else:
             self.debuglog("unknown flags on get: %x\n" % flags)
