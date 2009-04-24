@@ -53,9 +53,11 @@ except ImportError:
     import pickle
 
 __author__    = "Evan Martin <martine@danga.com>"
-__version__ = "1.31"
+__version__ = "1.32"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
 __license__   = "Python"
+
+SERVER_MAX_KEY_LENGTH = 250
 
 class _Error(Exception):
     pass
@@ -86,6 +88,14 @@ class Client:
     _FLAG_LONG    = 1<<2
 
     _SERVER_RETRIES = 10  # how many times to try finding a free server.
+
+    # exceptions for Client
+    class MemcachedKeyError(Exception):
+      pass
+    class MemcachedKeyLengthError(MemcachedKeyError):
+      pass
+    class MemcachedKeyCharacterError(MemcachedKeyError):
+      pass
 
     def __init__(self, servers, debug=0):
         """
@@ -190,6 +200,7 @@ class Client:
         @return: Nonzero on success.
         @rtype: int
         '''
+        check_key(key)
         server, key = self._get_server(key)
         if not server:
             return 0
@@ -245,6 +256,7 @@ class Client:
         return self._incrdecr("decr", key, delta)
 
     def _incrdecr(self, cmd, key, delta):
+        check_key(key)
         server, key = self._get_server(key)
         if not server:
             return 0
@@ -293,6 +305,7 @@ class Client:
         return self._set("set", key, val, time)
     
     def _set(self, cmd, key, val, time):
+        check_key(key)
         server, key = self._get_server(key)
         if not server:
             return 0
@@ -326,6 +339,7 @@ class Client:
         
         @return: The value or None.
         '''
+        check_key(key)
         server, key = self._get_server(key)
         if not server:
             return None
@@ -371,6 +385,7 @@ class Client:
 
         # build up a list for each server of all the keys we want.
         for key in keys:
+            check_key(key)
             server, key = self._get_server(key)
             if not server:
                 continue
@@ -538,6 +553,17 @@ class _Host:
         if self.deaduntil:
             d = " (dead until %d)" % self.deaduntil
         return "%s:%d%s" % (self.ip, self.port, d)
+
+def check_key(key):
+    """
+    Checks to make sure the key is less than SERVER_MAX_KEY_LENGTH or contains control characters.
+    If test fails throws MemcachedKeyLength error.
+    """
+    if len(key) > SERVER_MAX_KEY_LENGTH:
+      raise Client.MemcachedKeyLengthError, "Key length is > %s" % SERVER_MAX_KEY_LENGTH
+    for char in key:
+      if ord(char) < 33:
+        raise Client.MemcachedKeyCharacterError, "Control characters not allowed"
 
 def _doctest():
     import doctest, memcache
