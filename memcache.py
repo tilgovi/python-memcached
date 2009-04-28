@@ -953,7 +953,7 @@ class _Host(object):
             foo = self_socket_recv(4096)
             buf += foo
             if len(foo) == 0:
-                raise _Error, ( 'Read %d bytes, expecting %d, '
+                raise _Error( 'Read %d bytes, expecting %d, '
                         'read returned 0 length bytes' % ( len(buf), rlen ))
         self.buffer = buf[rlen:]
         return buf[:rlen]
@@ -979,21 +979,21 @@ def check_key(key, key_extra_len=0):
     """
     if isinstance(key, tuple): key = key[1]
     if not key:
-        raise Client.MemcachedKeyNoneError, ("Key is None")
+        raise Client.MemcachedKeyNoneError("Key is None")
     if isinstance(key, unicode):
-        raise Client.MemcachedStringEncodingError, ("Keys must be str()'s, not "
+        raise Client.MemcachedStringEncodingError("Keys must be str()'s, not "
                 "unicode.  Convert your unicode strings using "
                 "mystring.encode(charset)!")
     if not isinstance(key, str):
-        raise Client.MemcachedKeyTypeError, ("Key must be str()'s")
+        raise Client.MemcachedKeyTypeError("Key must be str()'s")
 
     if isinstance(key, basestring):
         if len(key) + key_extra_len > SERVER_MAX_KEY_LENGTH:
-             raise Client.MemcachedKeyLengthError, ("Key length is > %s"
+             raise Client.MemcachedKeyLengthError("Key length is > %s"
                      % SERVER_MAX_KEY_LENGTH)
         for char in key:
             if ord(char) < 32 or ord(char) == 127:
-                raise Client.MemcachedKeyCharacterError, "Control characters not allowed"
+                raise Client.MemcachedKeyCharacterError("Control characters not allowed")
 
 def _doctest():
     import doctest, memcache
