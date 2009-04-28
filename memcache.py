@@ -232,7 +232,7 @@ class Client(local):
                 #0 = STAT, 1 = ITEM, 2 = Value
                 slab = item[1].split(':', 2)
                 #0 = items, 1 = Slab #, 2 = Name
-                if not serverData.has_key(slab[1]):
+                if slab[1] not in serverData:
                     serverData[slab[1]] = {}
                 serverData[slab[1]][slab[2]] = item[2]
         return data
@@ -249,7 +249,7 @@ class Client(local):
             sys.stderr.write("MemCached: %s\n" % str)
 
     def _statlog(self, func):
-        if not self.stats.has_key(func):
+        if func not in self.stats:
             self.stats[func] = 1
         else:
             self.stats[func] += 1
@@ -534,7 +534,7 @@ class Client(local):
             if not server:
                 continue
 
-            if not server_keys.has_key(server):
+            if server not in server_keys:
                 server_keys[server] = []
             server_keys[server].append(key)
             prefixed_to_orig_key[key] = orig_key
