@@ -48,7 +48,6 @@ import socket
 import time
 import os
 import re
-import types
 try:
     import cPickle as pickle
 except ImportError:
@@ -268,7 +267,7 @@ class Client(local):
                 self.buckets.append(server)
 
     def _get_server(self, key):
-        if type(key) == types.TupleType:
+        if isinstance(key, tuple):
             serverhash, key = key
         else:
             serverhash = serverHashFunction(key)
@@ -333,7 +332,7 @@ class Client(local):
                 server.send_cmds(''.join(bigcmd))
             except socket.error, msg:
                 rc = 0
-                if type(msg) is types.TupleType: msg = msg[1]
+                if isinstance(msg, tuple): msg = msg[1]
                 server.mark_dead(msg)
                 dead_servers.append(server)
 
@@ -347,7 +346,7 @@ class Client(local):
                 for key in keys:
                     server.expect("DELETED")
             except socket.error, msg:
-                if type(msg) is types.TupleType: msg = msg[1]
+                if isinstance(msg, tuple): msg = msg[1]
                 server.mark_dead(msg)
                 rc = 0
         return rc
@@ -373,7 +372,7 @@ class Client(local):
             server.send_cmd(cmd)
             server.expect("DELETED")
         except socket.error, msg:
-            if type(msg) is types.TupleType: msg = msg[1]
+            if isinstance(msg, tuple): msg = msg[1]
             server.mark_dead(msg)
             return 0
         return 1
@@ -427,7 +426,7 @@ class Client(local):
             line = server.readline()
             return int(line)
         except socket.error, msg:
-            if type(msg) is types.TupleType: msg = msg[1]
+            if isinstance(msg, tuple): msg = msg[1]
             server.mark_dead(msg)
             return None
 
@@ -519,7 +518,7 @@ class Client(local):
         prefixed_to_orig_key = {}
         # build up a list for each server of all the keys we want.
         for orig_key in key_iterable:
-            if type(orig_key) is types.TupleType:
+            if isinstance(orig_key, tuple):
                 # Tuple of hashvalue, key ala _get_server(). Caller is essentially telling us what server to stuff this on.
                 # Ensure call to _get_server gets a Tuple as well.
                 str_orig_key = str(orig_key[1])
@@ -600,7 +599,7 @@ class Client(local):
                     write("set %s %d %d %d\r\n%s\r\n" % (key, store_info[0], time, store_info[1], store_info[2]))
                 server.send_cmds(''.join(bigcmd))
             except socket.error, msg:
-                if type(msg) is types.TupleType: msg = msg[1]
+                if isinstance(msg, tuple): msg = msg[1]
                 server.mark_dead(msg)
                 dead_servers.append(server)
 
@@ -621,7 +620,7 @@ class Client(local):
                     else:
                         notstored.append(prefixed_to_orig_key[key]) #un-mangle.
             except (_Error, socket.error), msg:
-                if type(msg) is types.TupleType: msg = msg[1]
+                if isinstance(msg, tuple): msg = msg[1]
                 server.mark_dead(msg)
         return notstored
 
@@ -686,7 +685,7 @@ class Client(local):
             server.send_cmd(fullcmd)
             return(server.expect("STORED") == "STORED")
         except socket.error, msg:
-            if type(msg) is types.TupleType: msg = msg[1]
+            if isinstance(msg, tuple): msg = msg[1]
             server.mark_dead(msg)
         return 0
 
@@ -710,7 +709,7 @@ class Client(local):
             value = self._recv_value(server, flags, rlen)
             server.expect("END")
         except (_Error, socket.error), msg:
-            if type(msg) is types.TupleType: msg = msg[1]
+            if isinstance(msg, tuple): msg = msg[1]
             server.mark_dead(msg)
             return None
         return value
@@ -763,7 +762,7 @@ class Client(local):
             try:
                 server.send_cmd("get %s" % " ".join(server_keys[server]))
             except socket.error, msg:
-                if type(msg) is types.TupleType: msg = msg[1]
+                if isinstance(msg, tuple): msg = msg[1]
                 server.mark_dead(msg)
                 dead_servers.append(server)
 
@@ -783,7 +782,7 @@ class Client(local):
                         retvals[prefixed_to_orig_key[rkey]] = val   # un-prefix returned key.
                     line = server.readline()
             except (_Error, socket.error), msg:
-                if type(msg) is types.TupleType: msg = msg[1]
+                if isinstance(msg, tuple): msg = msg[1]
                 server.mark_dead(msg)
         return retvals
 
@@ -840,7 +839,7 @@ class _Host(object):
     _SOCKET_TIMEOUT = 3  #  number of seconds before sockets timeout.
 
     def __init__(self, host, debugfunc=None):
-        if isinstance(host, types.TupleType):
+        if isinstance(host, tuple):
             host, self.weight = host
         else:
             self.weight = 1
@@ -902,7 +901,7 @@ class _Host(object):
             self.mark_dead("connect: %s" % msg)
             return None
         except socket.error, msg:
-            if type(msg) is types.TupleType: msg = msg[1]
+            if isinstance(msg, tuple): msg = msg[1]
             self.mark_dead("connect: %s" % msg[1])
             return None
         self.socket = s
@@ -978,7 +977,7 @@ def check_key(key, key_extra_len=0):
         Is not a string (Raises MemcachedKeyError)
         Is None (Raises MemcachedKeyError)
     """
-    if type(key) == types.TupleType: key = key[1]
+    if isinstance(key, tuple): key = key[1]
     if not key:
         raise Client.MemcachedKeyNoneError, ("Key is None")
     if isinstance(key, unicode):
@@ -1016,7 +1015,7 @@ if __name__ == "__main__":
         mc = Client(servers, debug=1)
 
         def to_s(val):
-            if not isinstance(val, types.StringTypes):
+            if not isinstance(val, basestring):
                 return "%s (%s)" % (val, type(val))
             return "%s" % val
         def test_setget(key, val):
