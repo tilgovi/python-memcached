@@ -931,14 +931,11 @@ class _Host(object):
             if not data:
                 self.mark_dead('Connection closed while reading from %s'
                         % repr(self))
-                break
+                self.buffer = ''
+                return None
             buf += data
-        if index >= 0:
-            self.buffer = buf[index+2:]
-            buf = buf[:index]
-        else:
-            self.buffer = ''
-        return buf
+        self.buffer = buf[index+2:]
+        return buf[:index]
 
     def expect(self, text):
         line = self.readline()
@@ -950,9 +947,9 @@ class _Host(object):
         self_socket_recv = self.socket.recv
         buf = self.buffer
         while len(buf) < rlen:
-            foo = self_socket_recv(4096)
+            foo = self_socket_recv(max(rlen - len(buf), 4096))
             buf += foo
-            if len(foo) == 0:
+            if not foo:
                 raise _Error( 'Read %d bytes, expecting %d, '
                         'read returned 0 length bytes' % ( len(buf), rlen ))
         self.buffer = buf[rlen:]
