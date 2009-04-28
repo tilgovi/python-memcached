@@ -835,7 +835,7 @@ class Client(local):
         return val
 
 
-class _Host:
+class _Host(object):
     _DEAD_RETRY = 30  # number of seconds before retrying a dead server.
     _SOCKET_TIMEOUT = 3  #  number of seconds before sockets timeout.
 
@@ -1031,7 +1031,7 @@ if __name__ == "__main__":
                 return 0
 
 
-        class FooStruct:
+        class FooStruct(object):
             def __init__(self):
                 self.bar = "baz"
             def __str__(self):
