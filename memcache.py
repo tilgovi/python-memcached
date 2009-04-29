@@ -932,7 +932,7 @@ class _Host(object):
     def expect(self, text):
         line = self.readline()
         if line != text:
-            logger.warning("while expecting '%s', got unexpected response '%s'" % (text, line))
+            logger.debug("while expecting '%s', got unexpected response '%s'" % (text, line))
         return line
 
     def recv(self, rlen):
