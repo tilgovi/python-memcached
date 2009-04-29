@@ -93,7 +93,7 @@ except ImportError:
     class local(object):
         pass
 
-logger = logging.getLogger('memcache')
+logger = logging.getLogger('memcached')
 
 class Client(local):
     """
