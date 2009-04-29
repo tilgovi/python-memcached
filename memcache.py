@@ -14,7 +14,7 @@ Usage summary
 This should give you a feel for how this module operates::
 
     import memcache
-    mc = memcache.Client(['127.0.0.1:11211'], debug=0)
+    mc = memcache.Client(['127.0.0.1:11211'])
 
     mc.set("some_key", "Some value")
     value = mc.get("some_key")
@@ -48,6 +48,7 @@ import socket
 import time
 import os
 import re
+import logging
 try:
     import cPickle as pickle
 except ImportError:
@@ -92,6 +93,7 @@ except ImportError:
     class local(object):
         pass
 
+logger = logging.getLogger('memcache')
 
 class Client(local):
     """
@@ -106,12 +108,12 @@ class Client(local):
         example, to keep all of a given user's objects on the same memcache
         server, so you could use the user's unique id as the hash value.
 
-    @group Setup: __init__, set_servers, forget_dead_hosts, disconnect_all, debuglog
+    @group Setup: __init__, set_servers, forget_dead_hosts, disconnect_all
     @group Insertion: set, add, replace, set_multi
     @group Retrieval: get, get_multi
     @group Integers: incr, decr
     @group Removal: delete, delete_multi
-    @sort: __init__, set_servers, forget_dead_hosts, disconnect_all, debuglog,\
+    @sort: __init__, set_servers, forget_dead_hosts, disconnect_all, \
            set, set_multi, add, replace, get, get_multi, incr, decr, delete, delete_multi
     """
     _FLAG_PICKLE  = 1<<0
@@ -135,15 +137,13 @@ class Client(local):
     class MemcachedStringEncodingError(Exception):
         pass
 
-    def __init__(self, servers, debug=0, pickleProtocol=0,
+    def __init__(self, servers, pickleProtocol=0,
                  pickler=pickle.Pickler, unpickler=pickle.Unpickler,
                  pload=None, pid=None):
         """
         Create a new Client object with the given list of servers.
 
         @param servers: C{servers} is passed to L{set_servers}.
-        @param debug: whether to display error messages when a server can't be
-        contacted.
         @param pickleProtocol: number to mandate protocol used by (c)Pickle.
         @param pickler: optional override of default Pickler to allow subclassing.
         @param unpickler: optional override of default Unpickler to allow subclassing.
@@ -154,7 +154,6 @@ class Client(local):
         """
         local.__init__(self)
         self.set_servers(servers)
-        self.debug = debug
         self.stats = {}
 
         # Allow users to modify pickling/unpickling behavior
@@ -182,7 +181,7 @@ class Client(local):
             2. Tuples of the form C{("host:port", weight)}, where C{weight} is
             an integer weight value.
         """
-        self.servers = [_Host(s, self.debuglog) for s in servers]
+        self.servers = [_Host(s) for s in servers]
         self._init_buckets()
 
     def get_stats(self):
@@ -242,10 +241,6 @@ class Client(local):
             if not s.connect(): continue
             s.send_cmd('flush_all')
             s.expect("OK")
-
-    def debuglog(self, str):
-        if self.debug:
-            sys.stderr.write("MemCached: %s\n" % str)
 
     def _statlog(self, func):
         if func not in self.stats:
@@ -826,10 +821,11 @@ class Client(local):
                     unpickler.persistent_load = self.persistent_load
                 val = unpickler.load()
             except Exception, e:
-                self.debuglog('Pickle error: %s\n' % e)
+                logger.warning('Pickle error: %s' % e)
+                logging
                 val = None
         else:
-            self.debuglog("unknown flags on get: %x\n" % flags)
+            logger.warning("unknown flags on get: %x" % flags)
 
         return val
 
@@ -838,7 +834,7 @@ class _Host(object):
     _DEAD_RETRY = 30  # number of seconds before retrying a dead server.
     _SOCKET_TIMEOUT = 3  #  number of seconds before sockets timeout.
 
-    def __init__(self, host, debugfunc=None):
+    def __init__(self, host):
         if isinstance(host, tuple):
             host, self.weight = host
         else:
@@ -863,10 +859,6 @@ class _Host(object):
             self.port = int(hostData.get('port', 11211))
             self.address = ( self.ip, self.port )
 
-        if not debugfunc:
-            debugfunc = lambda x: x
-        self.debuglog = debugfunc
-
         self.deaduntil = 0
         self.socket = None
 
@@ -884,7 +876,7 @@ class _Host(object):
         return 0
 
     def mark_dead(self, reason):
-        self.debuglog("MemCache: %s: %s.  Marking dead." % (self, reason))
+        logger.warning("MemCache: %s: %s.  Marking dead." % (self, reason))
         self.deaduntil = time.time() + _Host._DEAD_RETRY
         self.close_socket()
 
@@ -940,7 +932,7 @@ class _Host(object):
     def expect(self, text):
         line = self.readline()
         if line != text:
-            self.debuglog("while expecting '%s', got unexpected response '%s'" % (text, line))
+            logger.warning("while expecting '%s', got unexpected response '%s'" % (text, line))
         return line
 
     def recv(self, rlen):
@@ -995,11 +987,12 @@ def check_key(key, key_extra_len=0):
 def _doctest():
     import doctest, memcache
     servers = ["127.0.0.1:11211"]
-    mc = Client(servers, debug=1)
+    mc = Client(servers)
     globs = {"mc": mc}
     return doctest.testmod(memcache, globs=globs)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.WARNING)
     print "Testing docstrings..."
     _doctest()
     print "Running tests:"
@@ -1009,7 +1002,7 @@ if __name__ == "__main__":
         serverList.append([os.path.join(os.getcwd(), 'memcached.socket')])
 
     for servers in serverList:
-        mc = Client(servers, debug=1)
+        mc = Client(servers)
 
         def to_s(val):
             if not isinstance(val, basestring):
